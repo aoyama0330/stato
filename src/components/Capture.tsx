@@ -3,11 +3,14 @@ import { Loader2, Sparkles, Plus, Check, X, ChevronDown, ChevronUp, Mail, FileTe
 import type { Task, EnergyTag } from '../types/task';
 import { TAG_META } from '../types/task';
 import { decomposeCapture } from '../lib/claude';
+import GmailTab from './GmailTab';
 
 interface Props {
   apiKey: string;
+  gmailClientId: string;
   onAdd: (tasks: Task[]) => void;
   onClose: () => void;
+  onOpenSettings: () => void;
 }
 
 interface Draft {
@@ -27,8 +30,8 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: 'memo',  label: 'メモ', icon: <PenLine size={15} /> },
 ];
 
-export default function Capture({ apiKey, onAdd, onClose }: Props) {
-  const [tab, setTab] = useState<TabId>('memo');
+export default function Capture({ apiKey, gmailClientId, onAdd, onClose, onOpenSettings }: Props) {
+  const [tab, setTab] = useState<TabId>('gmail');
   const [text, setText] = useState('');
   const [fileName, setFileName] = useState('');
   const [loading, setLoading] = useState(false);
@@ -37,20 +40,11 @@ export default function Capture({ apiKey, onAdd, onClose }: Props) {
   const [manualTag, setManualTag] = useState<EnergyTag>('processing');
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setFileName(file.name);
-    const reader = new FileReader();
-    reader.onload = ev => setText(ev.target?.result as string ?? '');
-    reader.readAsText(file, 'UTF-8');
-  };
-
-  const handleAI = async () => {
-    if (!text.trim() || !apiKey) return;
+  const runAI = async (inputText: string) => {
+    if (!inputText.trim() || !apiKey) return;
     setLoading(true);
     try {
-      const result = await decomposeCapture(text, apiKey);
+      const result = await decomposeCapture(inputText, apiKey);
       setDrafts(prev => [
         ...prev,
         ...result.map(d => ({
@@ -66,6 +60,15 @@ export default function Capture({ apiKey, onAdd, onClose }: Props) {
       setFileName('');
     } catch {}
     setLoading(false);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = ev => setText(ev.target?.result as string ?? '');
+    reader.readAsText(file, 'UTF-8');
   };
 
   const handleManual = () => {
@@ -114,25 +117,13 @@ export default function Capture({ apiKey, onAdd, onClose }: Props) {
   const TIMES = [15, 25, 45, 60, 90, 120];
 
   const tabConfig = {
-    gmail: {
-      placeholder: 'Gmailのメールをコピー&ペーストしてください。\n\n例：\n件名：ABC社 連携仕様について\nFrom: tanaka@abc.co.jp\n\n先日の商談でご指摘いただいた件ですが、API仕様の認識に齟齬があることが判明しました。今週中に要件を整理して回答いただけますか。',
-      hint: 'GmailでメールをコピーしてそのままペーストするとAIがタスクを抽出します。',
-    },
-    file: {
-      placeholder: '',
-      hint: 'テキストファイル（.txt / .md / .csv）を読み込んでタスクを抽出します。',
-    },
-    memo: {
-      placeholder: '議事録・メモ・アイデアをそのまま貼り付けてください。\n\n例：\n【ABC社打合せメモ 8/22】\n・連携仕様の認識齟齬が発覚\n・要件整理が必要、エンジニアに確認\n・来週月曜までに回答',
-      hint: '議事録・打ち合わせメモ・アイデアメモからタスクを抽出します。',
-    },
+    file: { hint: 'テキストファイル（.txt / .md / .csv）を読み込んでタスクを抽出します。' },
+    memo: { hint: '議事録・打ち合わせメモ・アイデアメモをそのまま貼り付けてください。' },
   };
 
   return (
     <div className="capture-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="capture-panel">
-
-        {/* Header */}
         <div className="capture-header">
           <span className="capture-title">📥 キャプチャ</span>
           <button className="cap-close" onClick={onClose}><X size={18} /></button>
@@ -146,57 +137,68 @@ export default function Capture({ apiKey, onAdd, onClose }: Props) {
               className={`cap-tab${tab === t.id ? ' active' : ''}`}
               onClick={() => { setTab(t.id); setText(''); setFileName(''); }}
             >
-              {t.icon}
-              {t.label}
+              {t.icon}{t.label}
             </button>
           ))}
         </div>
 
         {/* Tab content */}
         <div className="cap-tab-body">
-          <p className="cap-ai-hint">{tabConfig[tab].hint}</p>
-
-          {tab === 'file' ? (
-            <div className="cap-file-area" onClick={() => fileRef.current?.click()}>
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".txt,.md,.csv,.text"
-                style={{ display: 'none' }}
-                onChange={handleFileChange}
-              />
-              {fileName ? (
-                <div className="cap-file-selected">
-                  <FileText size={20} />
-                  <span>{fileName}</span>
-                  <button onClick={e => { e.stopPropagation(); setText(''); setFileName(''); }}>
-                    <X size={14} />
-                  </button>
-                </div>
-              ) : (
-                <div className="cap-file-placeholder">
-                  <FileText size={28} />
-                  <span>クリックしてファイルを選択</span>
-                  <span className="cap-file-types">.txt / .md / .csv</span>
-                </div>
-              )}
-            </div>
-          ) : (
-            <textarea
-              className="cap-textarea"
-              rows={6}
-              placeholder={tabConfig[tab].placeholder}
-              value={text}
-              onChange={e => setText(e.target.value)}
+          {tab === 'gmail' && (
+            <GmailTab
+              clientId={gmailClientId}
+              onAnalyze={runAI}
+              analyzing={loading}
+              onOpenSettings={() => { onClose(); onOpenSettings(); }}
             />
           )}
 
-          {apiKey && (
-            <button className="cap-ai-btn" onClick={handleAI} disabled={loading || !text.trim()}>
-              {loading
-                ? <><Loader2 size={14} className="spin" /> 分解中…</>
-                : <><Sparkles size={14} /> AIでタスクに分解</>}
-            </button>
+          {tab === 'file' && (
+            <>
+              <p className="cap-ai-hint">{tabConfig.file.hint}</p>
+              <div className="cap-file-area" onClick={() => fileRef.current?.click()}>
+                <input
+                  ref={fileRef} type="file" accept=".txt,.md,.csv,.text"
+                  style={{ display: 'none' }} onChange={handleFileChange}
+                />
+                {fileName ? (
+                  <div className="cap-file-selected">
+                    <FileText size={20} /><span>{fileName}</span>
+                    <button onClick={e => { e.stopPropagation(); setText(''); setFileName(''); }}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="cap-file-placeholder">
+                    <FileText size={28} />
+                    <span>クリックしてファイルを選択</span>
+                    <span className="cap-file-types">.txt / .md / .csv</span>
+                  </div>
+                )}
+              </div>
+              {apiKey && (
+                <button className="cap-ai-btn" onClick={() => runAI(text)} disabled={loading || !text.trim()}>
+                  {loading ? <><Loader2 size={14} className="spin" /> 分解中…</> : <><Sparkles size={14} /> AIでタスクに分解</>}
+                </button>
+              )}
+            </>
+          )}
+
+          {tab === 'memo' && (
+            <>
+              <p className="cap-ai-hint">{tabConfig.memo.hint}</p>
+              <textarea
+                className="cap-textarea" rows={6}
+                placeholder={'例：\n【ABC社打合せメモ 8/22】\n・連携仕様の認識齟齬が発覚\n・要件整理が必要、エンジニアに確認\n・来週月曜までに回答'}
+                value={text}
+                onChange={e => setText(e.target.value)}
+              />
+              {apiKey && (
+                <button className="cap-ai-btn" onClick={() => runAI(text)} disabled={loading || !text.trim()}>
+                  {loading ? <><Loader2 size={14} className="spin" /> 分解中…</> : <><Sparkles size={14} /> AIでタスクに分解</>}
+                </button>
+              )}
+            </>
           )}
         </div>
 
@@ -205,10 +207,8 @@ export default function Capture({ apiKey, onAdd, onClose }: Props) {
           <div className="cap-section-label">手動で追加</div>
           <div className="cap-manual-row">
             <input
-              className="cap-input"
-              placeholder="タスクを直接追加…"
-              value={manualTitle}
-              onChange={e => setManualTitle(e.target.value)}
+              className="cap-input" placeholder="タスクを直接追加…"
+              value={manualTitle} onChange={e => setManualTitle(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && !e.nativeEvent.isComposing && handleManual()}
             />
             <select className="cap-tag-select" value={manualTag} onChange={e => setManualTag(e.target.value as EnergyTag)}>
@@ -227,12 +227,8 @@ export default function Capture({ apiKey, onAdd, onClose }: Props) {
             {drafts.map((d, i) => (
               <div key={i} className="cap-draft-item">
                 <div className="cap-draft-header">
-                  <input
-                    className="cap-draft-title-input"
-                    value={d.title}
-                    onChange={e => updateDraft(i, { title: e.target.value })}
-                    placeholder="タスク名"
-                  />
+                  <input className="cap-draft-title-input" value={d.title}
+                    onChange={e => updateDraft(i, { title: e.target.value })} placeholder="タスク名" />
                   <button className="cap-expand-btn" onClick={() => updateDraft(i, { expanded: !d.expanded })}>
                     {d.expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                   </button>
@@ -242,12 +238,9 @@ export default function Capture({ apiKey, onAdd, onClose }: Props) {
                   <div className="cap-draft-body">
                     <div className="cap-field">
                       <label className="cap-field-label">完了の定義（これができたら終わり）</label>
-                      <input
-                        className="cap-field-input cap-dod-input"
-                        value={d.definitionOfDone}
+                      <input className="cap-field-input cap-dod-input" value={d.definitionOfDone}
                         onChange={e => updateDraft(i, { definitionOfDone: e.target.value })}
-                        placeholder="例：〇〇さんに返信済み / 方針を1行でまとめた"
-                      />
+                        placeholder="例：〇〇さんに返信済み / 方針を1行でまとめた" />
                     </div>
                     {d.description && (
                       <div className="cap-field">

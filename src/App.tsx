@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import { fetchTodayCheckin, fetchTasks, insertTask, fetchWeeklyCheckins } from './lib/db';
-import { loadApiKey, saveApiKey } from './lib/storage';
+import { loadApiKey, saveApiKey, loadGmailClientId, saveGmailClientId } from './lib/storage';
 import type { Task, CheckIn } from './types/task';
 import Auth from './components/Auth';
 import CheckInScreen from './components/CheckIn';
@@ -22,6 +22,7 @@ export default function App() {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [showCapture, setShowCapture] = useState(false);
   const [apiKey, setApiKey] = useState(loadApiKey());
+  const [gmailClientId, setGmailClientId] = useState(loadGmailClientId());
   const [showSettings, setShowSettings] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -66,9 +67,11 @@ export default function App() {
     setTasks(prev => [...prev, ...saved]);
   };
 
-  const handleSaveApiKey = (k: string) => {
-    saveApiKey(k);
-    setApiKey(k);
+  const handleSaveSettings = (apiK: string, gmailK: string) => {
+    saveApiKey(apiK);
+    saveGmailClientId(gmailK);
+    setApiKey(apiK);
+    setGmailClientId(gmailK);
     setShowSettings(false);
   };
 
@@ -134,8 +137,10 @@ export default function App() {
       {showCapture && (
         <Capture
           apiKey={apiKey}
+          gmailClientId={gmailClientId}
           onAdd={handleAddTasks}
           onClose={() => setShowCapture(false)}
+          onOpenSettings={() => setShowSettings(true)}
         />
       )}
 
@@ -143,7 +148,8 @@ export default function App() {
       {showSettings && (
         <SettingsPanel
           apiKey={apiKey}
-          onSave={handleSaveApiKey}
+          gmailClientId={gmailClientId}
+          onSave={handleSaveSettings}
           onClose={() => setShowSettings(false)}
           onSignOut={() => supabase.auth.signOut()}
         />
@@ -152,13 +158,15 @@ export default function App() {
   );
 }
 
-function SettingsPanel({ apiKey, onSave, onClose, onSignOut }: {
+function SettingsPanel({ apiKey, gmailClientId, onSave, onClose, onSignOut }: {
   apiKey: string;
-  onSave: (k: string) => void;
+  gmailClientId: string;
+  onSave: (apiKey: string, gmailClientId: string) => void;
   onClose: () => void;
   onSignOut: () => void;
 }) {
   const [key, setKey] = useState(apiKey);
+  const [gmailKey, setGmailKey] = useState(gmailClientId);
   return (
     <div className="settings-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="settings-panel">
@@ -168,16 +176,20 @@ function SettingsPanel({ apiKey, onSave, onClose, onSignOut }: {
         </div>
         <div className="settings-section">
           <label className="settings-label">Claude API キー</label>
-          <input
-            className="settings-input"
-            type="password"
-            placeholder="sk-ant-..."
-            value={key}
-            onChange={e => setKey(e.target.value)}
-          />
+          <input className="settings-input" type="password" placeholder="sk-ant-..."
+            value={key} onChange={e => setKey(e.target.value)} />
           <p className="settings-hint">AI分解・作戦生成・共有メッセージに使用します。</p>
-          <button className="settings-save-btn" onClick={() => onSave(key)}>保存</button>
         </div>
+        <div className="settings-section">
+          <label className="settings-label">Google OAuth Client ID（Gmail連携）</label>
+          <input className="settings-input" type="text" placeholder="xxxx.apps.googleusercontent.com"
+            value={gmailKey} onChange={e => setGmailKey(e.target.value)} />
+          <p className="settings-hint">
+            Google Cloud ConsoleでGmail APIを有効化し、OAuth 2.0クライアントIDを作成してください。<br />
+            承認済みJavaScriptオリジンに <strong>https://stato-g2s0.onrender.com</strong> を追加してください。
+          </p>
+        </div>
+        <button className="settings-save-btn" onClick={() => onSave(key, gmailKey)}>保存</button>
         <div className="settings-section">
           <button className="settings-signout-btn" onClick={onSignOut}>ログアウト</button>
         </div>
