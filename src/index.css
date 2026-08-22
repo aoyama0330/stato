@@ -604,9 +604,14 @@ input, textarea, select { font-family: var(--font); }
   padding: 11px 24px; background: var(--accent); color: #fff;
   border-radius: var(--radius-sm); font-size: 14px; font-weight: 700;
 }
+.settings-reset-btn {
+  width: 100%; padding: 12px; border: 1.5px solid #FCCACA;
+  border-radius: var(--radius-sm); font-size: 13px; color: var(--danger);
+  margin-bottom: 10px; background: #FEF0F0;
+}
 .settings-signout-btn {
   width: 100%; padding: 12px; border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm); font-size: 14px; color: var(--danger);
+  border-radius: var(--radius-sm); font-size: 14px; color: var(--text-sub);
 }
 
 /* ── Mobile responsive ────────────────────────────────────────── */

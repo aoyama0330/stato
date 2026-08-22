@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
-import { fetchTodayCheckin, fetchTasks, insertTask, fetchWeeklyCheckins } from './lib/db';
+import { fetchTodayCheckin, fetchTasks, insertTask, fetchWeeklyCheckins, deleteAllTasks } from './lib/db';
 import { loadApiKey, saveApiKey, loadGmailClientId, saveGmailClientId, loadUserProfile, saveUserProfile } from './lib/storage';
 import type { UserProfile } from './lib/storage';
 import type { Task, CheckIn } from './types/task';
@@ -184,16 +184,25 @@ export default function App() {
           onSave={handleSaveSettings}
           onClose={() => setShowSettings(false)}
           onSignOut={() => supabase.auth.signOut()}
+          onDeleteAllTasks={async () => {
+            await deleteAllTasks();
+            setTasks([]);
+            setCheckin(null);
+            sessionStorage.removeItem('stato-flow-done');
+            setShowSettings(false);
+            setScreen('flow-capture');
+          }}
         />
       )}
     </div>
   );
 }
 
-function SettingsPanel({ apiKey, gmailClientId, profile, onSave, onClose, onSignOut }: {
+function SettingsPanel({ apiKey, gmailClientId, profile, onSave, onClose, onSignOut, onDeleteAllTasks }: {
   apiKey: string; gmailClientId: string; profile: UserProfile;
   onSave: (apiKey: string, gmailClientId: string, profile: UserProfile) => void;
   onClose: () => void; onSignOut: () => void;
+  onDeleteAllTasks: () => void;
 }) {
   const [key, setKey] = useState(apiKey);
   const [gmailKey, setGmailKey] = useState(gmailClientId);
@@ -226,6 +235,9 @@ function SettingsPanel({ apiKey, gmailClientId, profile, onSave, onClose, onSign
         </div>
         <button className="settings-save-btn" onClick={() => onSave(key, gmailKey, { name, company, role })}>保存</button>
         <div className="settings-section">
+          <button className="settings-reset-btn" onClick={onDeleteAllTasks}>
+            全タスクを削除して最初からやり直す
+          </button>
           <button className="settings-signout-btn" onClick={onSignOut}>ログアウト</button>
         </div>
       </div>

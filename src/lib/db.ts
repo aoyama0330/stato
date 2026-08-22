@@ -113,6 +113,13 @@ export async function deleteTask(id: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function deleteAllTasks(): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  const { error } = await supabase.from('stato_tasks').delete().eq('user_id', user.id);
+  if (error) throw error;
+}
+
 // ── Weekly summary ─────────────────────────────────────────────
 export async function fetchWeeklyCheckins(): Promise<CheckIn[]> {
   const d = new Date();
