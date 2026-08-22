@@ -57,10 +57,16 @@ export interface GmailMessage {
   selected: boolean;
 }
 
+function decodeBase64Utf8(data: string): string {
+  const binary = atob(data.replace(/-/g, '+').replace(/_/g, '/'));
+  const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+  return new TextDecoder('utf-8').decode(bytes);
+}
+
 function extractBody(payload: Record<string, unknown>): string {
   if (payload.mimeType === 'text/plain') {
     const data = (payload.body as Record<string, string>)?.data;
-    if (data) return atob(data.replace(/-/g, '+').replace(/_/g, '/'));
+    if (data) return decodeBase64Utf8(data);
   }
   const parts = payload.parts as Record<string, unknown>[] | undefined;
   if (parts) {
