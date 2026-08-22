@@ -246,17 +246,34 @@ input, textarea, select { font-family: var(--font); }
 .cap-add-btn:disabled { opacity: .5; }
 
 .cap-drafts { border-top: 1px solid var(--border); padding-top: 14px; }
-.cap-drafts-title { font-size: 11px; color: var(--text-sub); margin-bottom: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.cap-section-label { font-size: 11px; color: var(--text-sub); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
+.cap-ai-hint { font-size: 12px; color: var(--text-sub); margin-bottom: 8px; line-height: 1.6; }
+
+.cap-drafts-title { font-size: 12px; color: var(--text-sub); margin-bottom: 10px; font-weight: 700; }
 .cap-draft-item {
   border: 1px solid var(--border); border-radius: var(--radius-sm);
   padding: 10px 12px; margin-bottom: 8px;
 }
-.cap-draft-title {
-  width: 100%; font-size: 14px; font-weight: 600; border: none;
-  background: none; outline: none; margin-bottom: 8px;
+.cap-draft-header { display: flex; align-items: center; gap: 6px; }
+.cap-draft-title-input {
+  flex: 1; font-size: 14px; font-weight: 600; border: none;
+  background: none; outline: none;
 }
+.cap-expand-btn { color: var(--text-sub); padding: 2px; flex-shrink: 0; }
+.cap-remove-btn { color: var(--text-sub); flex-shrink: 0; }
+
+.cap-draft-body { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.cap-field { display: flex; flex-direction: column; gap: 4px; }
+.cap-field-label { font-size: 11px; color: var(--text-sub); font-weight: 600; }
+.cap-field-input {
+  width: 100%; padding: 8px 10px; border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); font-size: 13px; outline: none;
+  transition: border-color .15s;
+}
+.cap-field-input:focus { border-color: var(--accent); }
+.cap-dod-input { background: #FAFBFF; }
+.cap-description { font-size: 12px; color: var(--text-sub); line-height: 1.6; }
 .cap-draft-meta { display: flex; gap: 8px; align-items: center; }
-.cap-remove-btn { margin-left: auto; color: var(--text-sub); }
 .cap-confirm-btn {
   width: 100%; padding: 12px; margin-top: 8px;
   background: var(--accent); color: #fff;

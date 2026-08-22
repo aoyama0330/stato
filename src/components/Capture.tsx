@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Loader2, Sparkles, Plus, Check, X } from 'lucide-react';
+import { Loader2, Sparkles, Plus, Check, X, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Task, EnergyTag } from '../types/task';
 import { TAG_META } from '../types/task';
 import { decomposeCapture } from '../lib/claude';
@@ -13,8 +13,10 @@ interface Props {
 interface Draft {
   title: string;
   description: string;
+  definitionOfDone: string;
   energyTag: EnergyTag;
   timeboxMinutes: number;
+  expanded: boolean;
 }
 
 export default function Capture({ apiKey, onAdd, onClose }: Props) {
@@ -32,8 +34,10 @@ export default function Capture({ apiKey, onAdd, onClose }: Props) {
       setDrafts(result.map(d => ({
         title: d.title,
         description: d.description,
+        definitionOfDone: d.definitionOfDone,
         energyTag: d.energyTag,
         timeboxMinutes: d.timeboxMinutes,
+        expanded: true,
       })));
     } catch {}
     setLoading(false);
@@ -41,7 +45,14 @@ export default function Capture({ apiKey, onAdd, onClose }: Props) {
 
   const handleManual = () => {
     if (!manualTitle.trim()) return;
-    setDrafts(prev => [...prev, { title: manualTitle.trim(), description: '', energyTag: manualTag, timeboxMinutes: 25 }]);
+    setDrafts(prev => [...prev, {
+      title: manualTitle.trim(),
+      description: '',
+      definitionOfDone: '',
+      energyTag: manualTag,
+      timeboxMinutes: 25,
+      expanded: true,
+    }]);
     setManualTitle('');
   };
 
@@ -59,7 +70,7 @@ export default function Capture({ apiKey, onAdd, onClose }: Props) {
       title: d.title,
       description: d.description,
       energyTag: d.energyTag,
-      definitionOfDone: '',
+      definitionOfDone: d.definitionOfDone,
       status: 'ready',
       timeboxMinutes: d.timeboxMinutes,
       actualMinutes: null,
@@ -75,7 +86,7 @@ export default function Capture({ apiKey, onAdd, onClose }: Props) {
   };
 
   const TAGS: EnergyTag[] = ['thinking', 'social', 'processing', 'review'];
-  const TIMES = [15, 25, 45, 60, 90];
+  const TIMES = [15, 25, 45, 60, 90, 120];
 
   return (
     <div className="capture-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -88,21 +99,25 @@ export default function Capture({ apiKey, onAdd, onClose }: Props) {
         {/* AI decompose */}
         {apiKey && (
           <div className="capture-ai">
+            <p className="cap-ai-hint">メール・議事録・メモをそのまま貼り付けてください。AIがタスクに分解します。</p>
             <textarea
               className="cap-textarea"
-              rows={3}
-              placeholder="状況をそのまま貼り付けてください。AIがタスクに分解します。&#10;例：ABC社商談で連携仕様の問題が発覚。要件整理・確認・社内共有が必要。"
+              rows={5}
+              placeholder="例：&#10;件名：ABC社連携仕様の問題について&#10;先ほどの商談で、API仕様の認識齟齬が発覚しました。先方の要件を整理し、社内エンジニアに確認後、週内に回答が必要です。"
               value={text}
               onChange={e => setText(e.target.value)}
             />
             <button className="cap-ai-btn" onClick={handleAI} disabled={loading || !text.trim()}>
-              {loading ? <><Loader2 size={14} className="spin" /> 分解中…</> : <><Sparkles size={14} /> AIで分解</>}
+              {loading
+                ? <><Loader2 size={14} className="spin" /> 分解中…</>
+                : <><Sparkles size={14} /> AIでタスクに分解</>}
             </button>
           </div>
         )}
 
         {/* Manual add */}
         <div className="capture-manual">
+          <div className="cap-section-label">手動で追加</div>
           <div className="cap-manual-row">
             <input
               className="cap-input"
@@ -123,29 +138,57 @@ export default function Capture({ apiKey, onAdd, onClose }: Props) {
         {/* Draft list */}
         {drafts.length > 0 && (
           <div className="cap-drafts">
-            <div className="cap-drafts-title">確認・編集してから追加</div>
+            <div className="cap-drafts-title">確認・編集してから追加（{drafts.length}件）</div>
             {drafts.map((d, i) => (
               <div key={i} className="cap-draft-item">
-                <input
-                  className="cap-draft-title"
-                  value={d.title}
-                  onChange={e => updateDraft(i, { title: e.target.value })}
-                />
-                <div className="cap-draft-meta">
-                  <select className="cap-mini-select" value={d.energyTag}
-                    onChange={e => updateDraft(i, { energyTag: e.target.value as EnergyTag })}>
-                    {TAGS.map(t => <option key={t} value={t}>{TAG_META[t].emoji} {TAG_META[t].label}</option>)}
-                  </select>
-                  <select className="cap-mini-select" value={d.timeboxMinutes}
-                    onChange={e => updateDraft(i, { timeboxMinutes: Number(e.target.value) })}>
-                    {TIMES.map(m => <option key={m} value={m}>{m}分</option>)}
-                  </select>
+                {/* Header row */}
+                <div className="cap-draft-header">
+                  <input
+                    className="cap-draft-title-input"
+                    value={d.title}
+                    onChange={e => updateDraft(i, { title: e.target.value })}
+                    placeholder="タスク名"
+                  />
+                  <button className="cap-expand-btn" onClick={() => updateDraft(i, { expanded: !d.expanded })}>
+                    {d.expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  </button>
                   <button className="cap-remove-btn" onClick={() => removeDraft(i)}><X size={13} /></button>
                 </div>
+
+                {/* Expanded details */}
+                {d.expanded && (
+                  <div className="cap-draft-body">
+                    <div className="cap-field">
+                      <label className="cap-field-label">完了の定義（これができたら終わり）</label>
+                      <input
+                        className="cap-field-input cap-dod-input"
+                        value={d.definitionOfDone}
+                        onChange={e => updateDraft(i, { definitionOfDone: e.target.value })}
+                        placeholder="例：〇〇さんに返信済み / 方針を1行でまとめた"
+                      />
+                    </div>
+                    {d.description && (
+                      <div className="cap-field">
+                        <label className="cap-field-label">背景</label>
+                        <p className="cap-description">{d.description}</p>
+                      </div>
+                    )}
+                    <div className="cap-draft-meta">
+                      <select className="cap-mini-select" value={d.energyTag}
+                        onChange={e => updateDraft(i, { energyTag: e.target.value as EnergyTag })}>
+                        {TAGS.map(t => <option key={t} value={t}>{TAG_META[t].emoji} {TAG_META[t].label}</option>)}
+                      </select>
+                      <select className="cap-mini-select" value={d.timeboxMinutes}
+                        onChange={e => updateDraft(i, { timeboxMinutes: Number(e.target.value) })}>
+                        {TIMES.map(m => <option key={m} value={m}>{m}分</option>)}
+                      </select>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
             <button className="cap-confirm-btn" onClick={handleConfirm}>
-              <Check size={15} /> {drafts.length}件を追加
+              <Check size={15} /> {drafts.length}件をタスクに追加
             </button>
           </div>
         )}
