@@ -109,7 +109,7 @@ export default function Capture({ apiKey, onAdd, onClose }: Props) {
               placeholder="タスクを直接追加…"
               value={manualTitle}
               onChange={e => setManualTitle(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleManual()}
+              onKeyDown={e => e.key === 'Enter' && !e.nativeEvent.isComposing && handleManual()}
             />
             <select className="cap-tag-select" value={manualTag} onChange={e => setManualTag(e.target.value as EnergyTag)}>
               {TAGS.map(t => <option key={t} value={t}>{TAG_META[t].emoji} {TAG_META[t].label}</option>)}

@@ -27,7 +27,7 @@ export default function Auth() {
           value={email} onChange={e => setEmail(e.target.value)} />
         <input className="auth-input" type="password" placeholder="パスワード"
           value={password} onChange={e => setPassword(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handle()} />
+          onKeyDown={e => e.key === 'Enter' && !e.nativeEvent.isComposing && handle()} />
         {error && <p className="auth-error">{error}</p>}
         <button className="auth-btn" onClick={handle} disabled={loading}>
           {loading ? '処理中...' : mode === 'login' ? 'ログイン' : '新規登録'}

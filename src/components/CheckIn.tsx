@@ -63,7 +63,7 @@ export default function CheckIn({ tasks, apiKey, onDone }: Props) {
               placeholder="例：ISM改修の方針を決める"
               value={intention}
               onChange={e => setIntention(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleStart()}
+              onKeyDown={e => e.key === 'Enter' && !e.nativeEvent.isComposing && handleStart()}
             />
           </div>
         )}
