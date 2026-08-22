@@ -35,30 +35,42 @@ export default function Capture({ apiKey, gmailClientId, onAdd, onClose, onOpenS
   const [text, setText] = useState('');
   const [fileName, setFileName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [manualTitle, setManualTitle] = useState('');
   const [manualTag, setManualTag] = useState<EnergyTag>('processing');
   const fileRef = useRef<HTMLInputElement>(null);
 
   const runAI = async (inputText: string) => {
-    if (!inputText.trim() || !apiKey) return;
+    if (!inputText.trim()) return;
+    if (!apiKey) {
+      setAiError('Claude APIキーが設定されていません。設定画面から入力してください。');
+      return;
+    }
     setLoading(true);
+    setAiError('');
     try {
       const result = await decomposeCapture(inputText, apiKey);
-      setDrafts(prev => [
-        ...prev,
-        ...result.map(d => ({
-          title: d.title,
-          description: d.description,
-          definitionOfDone: d.definitionOfDone,
-          energyTag: d.energyTag,
-          timeboxMinutes: d.timeboxMinutes,
-          expanded: true,
-        })),
-      ]);
-      setText('');
-      setFileName('');
-    } catch {}
+      if (result.length === 0) {
+        setAiError('タスクを抽出できませんでした。内容を確認してください。');
+      } else {
+        setDrafts(prev => [
+          ...prev,
+          ...result.map(d => ({
+            title: d.title,
+            description: d.description,
+            definitionOfDone: d.definitionOfDone,
+            energyTag: d.energyTag,
+            timeboxMinutes: d.timeboxMinutes,
+            expanded: true,
+          })),
+        ]);
+        setText('');
+        setFileName('');
+      }
+    } catch (e) {
+      setAiError('AI分析中にエラーが発生しました。APIキーを確認してください。');
+    }
     setLoading(false);
   };
 
@@ -141,6 +153,11 @@ export default function Capture({ apiKey, gmailClientId, onAdd, onClose, onOpenS
             </button>
           ))}
         </div>
+
+        {/* AI error */}
+        {aiError && (
+          <div className="cap-ai-error">{aiError}</div>
+        )}
 
         {/* Tab content */}
         <div className="cap-tab-body">
