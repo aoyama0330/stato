@@ -19,13 +19,21 @@ export interface DecomposedTask {
   timeboxMinutes: number;
 }
 
-export async function decomposeCapture(text: string, apiKey: string): Promise<DecomposedTask[]> {
+export async function decomposeCapture(
+  text: string,
+  apiKey: string,
+  profile?: { name: string; company: string; role: string },
+): Promise<DecomposedTask[]> {
+  const who = profile?.name
+    ? `対象ユーザー：${profile.name}（${profile.company}${profile.role ? '・' + profile.role : ''}）\nこのユーザーが自分で対応すべきタスクのみを抽出してください。`
+    : '';
   const res = await client(apiKey).messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 2048,
     system: `あなたはタスク分解アシスタントです。メール・議事録・メモなどの入力テキストから、具体的なアクションタスクを抽出し、JSON配列で返してください。
 
 今日: ${localDate()}
+${who}
 
 各タスクのフィールド:
 - title: 短いタイトル（30文字以内）
@@ -37,6 +45,7 @@ export async function decomposeCapture(text: string, apiKey: string): Promise<De
 注意：
 - 「検討する」「確認する」など曖昧なタスクは、definitionOfDoneで具体的にゴールを明示してください
 - 1つの大きな作業は複数タスクに分解してください
+- 他の人への転送・CC情報など、このユーザーが実際に動く必要のないものは除外してください
 
 JSONのみ返してください。`,
     messages: [{ role: 'user', content: text }],

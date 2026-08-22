@@ -65,6 +65,26 @@ input, textarea, select { font-family: var(--font); }
   height: 100dvh; color: var(--text-sub);
 }
 
+/* ── Flow Capture ─────────────────────────────────────────────── */
+.flow-capture-screen { min-height: 100dvh; background: var(--bg); overflow-y: auto; }
+.flow-capture-inner { max-width: 600px; margin: 0 auto; padding: 24px 16px 40px; }
+.flow-header { margin-bottom: 24px; }
+.flow-step-badge {
+  display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .1em;
+  color: var(--accent); background: var(--accent-bg); padding: 4px 10px;
+  border-radius: 20px; margin-bottom: 10px;
+}
+.flow-title { font-size: 22px; font-weight: 900; margin-bottom: 6px; }
+.flow-sub { font-size: 13px; color: var(--text-sub); }
+.flow-actions { margin-top: 20px; }
+.flow-next-btn {
+  width: 100%; padding: 14px; background: var(--accent); color: #fff;
+  border-radius: var(--radius-sm); font-size: 15px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: opacity .15s;
+}
+.flow-next-btn:hover { opacity: .9; }
+
 /* ── Auth ─────────────────────────────────────────────────────── */
 .auth-screen {
   display: flex; align-items: center; justify-content: center;
@@ -158,6 +178,9 @@ input, textarea, select { font-family: var(--font); }
   font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 20px;
 }
 .mv-timebox { display: flex; align-items: center; gap: 3px; font-size: 11px; color: var(--text-sub); margin-left: auto; }
+.mv-edit-btn { color: var(--text-sub); flex-shrink: 0; padding: 2px 4px; border-radius: 4px; transition: background .15s; }
+.mv-edit-btn:hover { background: var(--border); }
+.mv-card-dod { font-size: 11px; color: #2E9E72; margin-bottom: 4px; }
 
 .mv-card-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
 .mv-card-desc { font-size: 12px; color: var(--text-sub); margin-bottom: 10px; }
@@ -509,6 +532,52 @@ input, textarea, select { font-family: var(--font); }
 }
 .sv-completed-title { font-size: 14px; }
 .sv-completed-time { font-size: 12px; color: var(--text-sub); flex-shrink: 0; }
+
+/* ── TaskEdit Modal ───────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 150;
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.task-edit-panel {
+  background: var(--surface); border-radius: var(--radius) var(--radius) 0 0;
+  width: 100%; max-width: 540px; padding: 20px 20px 40px;
+  max-height: 85dvh; overflow-y: auto;
+}
+.te-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.te-title { font-size: 15px; font-weight: 700; }
+.te-close { color: var(--text-sub); }
+.te-body { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; }
+.te-field { display: flex; flex-direction: column; gap: 4px; }
+.te-label { font-size: 11px; color: var(--text-sub); font-weight: 600; }
+.te-input {
+  padding: 10px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 14px; outline: none; font-family: var(--font);
+}
+.te-input:focus { border-color: var(--accent); }
+.te-textarea {
+  padding: 10px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 13px; resize: none; outline: none; font-family: var(--font); line-height: 1.6;
+}
+.te-textarea:focus { border-color: var(--accent); }
+.te-row { display: flex; gap: 12px; }
+.te-row .te-field { flex: 1; }
+.te-select {
+  padding: 9px 10px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 13px; background: var(--surface); outline: none; font-family: var(--font);
+}
+.te-actions { display: flex; gap: 10px; }
+.te-save-btn {
+  flex: 1; padding: 12px; background: var(--accent); color: #fff;
+  border-radius: var(--radius-sm); font-size: 14px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.te-save-btn:disabled { opacity: .5; }
+.te-delete-btn {
+  padding: 12px 16px; border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); font-size: 13px; color: var(--text-sub);
+  display: flex; align-items: center; gap: 6px; transition: all .15s;
+}
+.te-delete-btn.confirm { border-color: var(--danger); color: var(--danger); }
 
 /* ── Settings ─────────────────────────────────────────────────── */
 .settings-overlay {

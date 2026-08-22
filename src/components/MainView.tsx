@@ -1,17 +1,21 @@
 import { useState } from 'react';
-import { Plus, Zap, Clock, ArrowRight } from 'lucide-react';
+import { Plus, Zap, Clock, ArrowRight, Pencil } from 'lucide-react';
 import type { Task, EnergyLevel, CheckIn } from '../types/task';
 import { TAG_META, ENERGY_META, ENERGY_COMPATIBLE } from '../types/task';
+import TaskEditModal from './TaskEditModal';
 
 interface Props {
   checkin: CheckIn;
   tasks: Task[];
   onStartTask: (task: Task) => void;
   onCapture: () => void;
+  onUpdateTask: (updated: Task) => void;
+  onDeleteTask: (id: string) => void;
 }
 
-export default function MainView({ checkin, tasks, onStartTask, onCapture }: Props) {
+export default function MainView({ checkin, tasks, onStartTask, onCapture, onUpdateTask, onDeleteTask }: Props) {
   const [showBypassed, setShowBypassed] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const energy: EnergyLevel = checkin.energyLevel;
   const compatible = ENERGY_COMPATIBLE[energy];
 
@@ -32,12 +36,8 @@ export default function MainView({ checkin, tasks, onStartTask, onCapture }: Pro
           <span className="mv-emoji">{energyMeta.emoji}</span>
           {energyMeta.label}
         </span>
-        {checkin.intention && (
-          <span className="mv-intention">「{checkin.intention}」</span>
-        )}
-        {checkin.strategy && (
-          <p className="mv-strategy">{checkin.strategy}</p>
-        )}
+        {checkin.intention && <span className="mv-intention">「{checkin.intention}」</span>}
+        {checkin.strategy && <p className="mv-strategy">{checkin.strategy}</p>}
       </div>
 
       {/* Available tasks */}
@@ -46,7 +46,6 @@ export default function MainView({ checkin, tasks, onStartTask, onCapture }: Pro
           <span className="mv-section-title">今できること</span>
           <span className="mv-count">{available.length}件</span>
         </div>
-
         {available.length === 0 ? (
           <div className="mv-empty">
             <p>タスクがありません。<br />右下のボタンから追加しましょう。</p>
@@ -54,7 +53,9 @@ export default function MainView({ checkin, tasks, onStartTask, onCapture }: Pro
         ) : (
           <div className="mv-task-list">
             {available.map(task => (
-              <TaskCard key={task.id} task={task} onStart={() => onStartTask(task)} />
+              <TaskCard key={task.id} task={task}
+                onStart={() => onStartTask(task)}
+                onEdit={() => setEditingTask(task)} />
             ))}
           </div>
         )}
@@ -71,7 +72,10 @@ export default function MainView({ checkin, tasks, onStartTask, onCapture }: Pro
           {showBypassed && (
             <div className="mv-task-list mv-dimmed">
               {bypassed.map(task => (
-                <TaskCard key={task.id} task={task} onStart={() => onStartTask(task)} bypassed />
+                <TaskCard key={task.id} task={task}
+                  onStart={() => onStartTask(task)}
+                  onEdit={() => setEditingTask(task)}
+                  bypassed />
               ))}
             </div>
           )}
@@ -82,6 +86,16 @@ export default function MainView({ checkin, tasks, onStartTask, onCapture }: Pro
       <button className="mv-fab" onClick={onCapture} aria-label="タスクを追加">
         <Plus size={22} />
       </button>
+
+      {/* Edit modal */}
+      {editingTask && (
+        <TaskEditModal
+          task={editingTask}
+          onSave={updated => { onUpdateTask(updated); setEditingTask(null); }}
+          onDelete={id => { onDeleteTask(id); setEditingTask(null); }}
+          onClose={() => setEditingTask(null)}
+        />
+      )}
     </div>
   );
 }
@@ -89,10 +103,11 @@ export default function MainView({ checkin, tasks, onStartTask, onCapture }: Pro
 interface CardProps {
   task: Task;
   onStart: () => void;
+  onEdit: () => void;
   bypassed?: boolean;
 }
 
-function TaskCard({ task, onStart, bypassed }: CardProps) {
+function TaskCard({ task, onStart, onEdit, bypassed }: CardProps) {
   const tag = TAG_META[task.energyTag];
   return (
     <div className={`mv-task-card${bypassed ? ' bypassed' : ''}`}>
@@ -101,12 +116,12 @@ function TaskCard({ task, onStart, bypassed }: CardProps) {
           {tag.emoji} {tag.label}
         </span>
         {task.timeboxMinutes && (
-          <span className="mv-timebox">
-            <Clock size={11} /> {task.timeboxMinutes}分
-          </span>
+          <span className="mv-timebox"><Clock size={11} /> {task.timeboxMinutes}分</span>
         )}
+        <button className="mv-edit-btn" onClick={onEdit}><Pencil size={13} /></button>
       </div>
       <div className="mv-card-title">{task.title}</div>
+      {task.definitionOfDone && <div className="mv-card-dod">✓ {task.definitionOfDone}</div>}
       {task.description && <div className="mv-card-desc">{task.description}</div>}
       <button className="mv-start-btn" onClick={onStart}>
         はじめる <ArrowRight size={13} />
